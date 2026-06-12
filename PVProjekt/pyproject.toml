@@ -1,0 +1,21 @@
+[tool.black]
+line-length = 88
+target-version = ["py312"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+# E/F = pycodestyle+pyflakes, I = import sorting, D = docstring checks
+select = ["E", "F", "I", "D"]
+ignore = ["D203", "D213"]   # two mutually-exclusive docstring rules; pick the others
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"        # enforce the Google docstring style you've been using
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["D104"]     # don't require docstrings in empty package files
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,35 @@
+services:
+  collector:                       # your Python app: fetch -> clean -> export
+    build: .
+    container_name: pv_collector
+    ports:
+      - "8000:8000"                # /metrics endpoint
+
+  prometheus:                      # the time-series database
+    image: prom/prometheus:latest
+    container_name: pv_prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus        # <-- persist time-series across restarts
+    depends_on:
+      - collector
+
+  grafana:                         # the dashboard / frontend
+    image: grafana/grafana:latest
+    container_name: pv_grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana-data:/var/lib/grafana        # <-- persist login & Grafana state
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin   # dev only — fine for a student project
+    depends_on:
+      - prometheus
+
+volumes:                           # named volumes managed by Docker
+  prometheus-data:
+  grafana-data:
