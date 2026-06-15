@@ -1,6 +1,6 @@
 services:
   collector:                       # your Python app: fetch -> clean -> export
-    build: .
+    build: PVProjekt
     container_name: pv_collector
     ports:
       - "8000:8000"                # /metrics endpoint
