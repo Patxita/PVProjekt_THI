@@ -1,114 +1,133 @@
-# # PVProjekt_THI
-PV-Projekt mit THI-Daten für 4. Portfolio-Prüfung
+# ☀️ PV Dashboard – THI Ingolstadt
 
+A real-time photovoltaic monitoring dashboard built for the THI (Technische Hochschule Ingolstadt) Data Science course.
 
-## PV Monitoring Dashboard
+The system collects live PV data from the university's API every 5 seconds, stores it in a local SQLite database, and displays it in an auto-refreshing Streamlit dashboard.
 
-Real-time and historical monitoring of the photovoltaic (PV) system on the roof
-of Technische Hochschule Ingolstadt (THI). A Python collector reads live power
-values (~every 5 s), cleans them, and exposes them to **Prometheus**; **Grafana**
-visualises real-time and cumulative energy data.
+---
 
-> **Status:** software-engineering skeleton. The real PV API is not yet available,
-> so the collector runs on realistic **mock data** (`MockPVSource`).
+## Features
 
-## Architecture
+- Live metric cards: current PV generation, consumption, grid import, and autarky
+- Daily, monthly, and yearly energy totals
+- Time-series chart: today's generation (Wh) and consumption (W) in one diagram
+- Three pie charts: PV self-coverage ratio for today, this month, and this year
+- Fully containerised with Docker
+- CI/CD pipeline via GitHub Actions
+
+---
+
+## Project Structure
 
 ```
-PV API (future) / MockPVSource
-        │  fetch every ~5 s
-   ┌────▼─────────────────────────────┐
-   │ Collector (Python, src/)         │
-   │  client → data_cleaner → metrics │
-   │            → data_storage        │
-   │  exposes /metrics on :8000       │
-   └────┬─────────────────────────────┘
-        │  scrape every 5 s
-   ┌────▼─────────┐   query   ┌──────────────┐
-   │ Prometheus   │◀─────────▶│   Grafana    │
-   │ :9090 (TSDB) │           │  :3000 (UI)  │
-   └──────────────┘           └──────────────┘
+PVProjekt_THI/
+├── src/
+│   ├── main.py                 # Data collection loop
+│   └── backend/
+│       ├── client.py           # Live API client
+│       ├── data_cleaner.py     # Validation and repair of raw readings
+│       ├── data_storage.py     # SQLite storage layer
+│       ├── metrics.py          # KPI calculations
+│       ├── models.py           # PVReading data model
+│       └── mock_source.py      # Synthetic data for offline use
+├── tests/                      # Unit and integration tests
+├── app.py                      # Streamlit dashboard
+├── Dockerfile
+├── docker-compose.yml
+├── requirements.txt
+└── .github/workflows/ci.yml    # CI/CD pipeline
 ```
 
-| Component     | Technology     | Role                                             |
-|---------------|----------------|--------------------------------------------------|
-| Collector     | Python         | Fetch → clean → calculate → export metrics       |
-| Storage       | Prometheus     | Time-series database + per-period aggregation    |
-| Dashboard     | Grafana        | Real-time (today) + cumulative (past days) views |
-| Orchestration | Docker Compose | Runs all three services together                 |
+---
 
-## Quick start
+## Installation (local)
 
-**Prerequisite:** Docker Desktop running.
+### Prerequisites
+
+- Python 3.12+
+- Git
+
+### Steps
 
 ```bash
-git clone https://github.com/Patxita/PVProjekt.git
-cd PVProjekt
+# 1. Clone the repository
+git clone https://github.com/Patxita/PVProjekt_THI.git
+cd PVProjekt_THI
+
+# 2. Create and activate a virtual environment
+python -m venv .venv
+source .venv/bin/activate        # macOS/Linux
+# .venv\Scripts\activate         # Windows
+
+# 3. Install dependencies
+pip install -r requirements.txt
+pip install -r requirements-dev.txt
+
+# 4. Create a .env file with your API credentials (never commit this file!)
+echo "PV_API_URL=https://jupyterhub-wi.rz.fh-ingolstadt.de:8443/data" > .env
+echo "PV_API_KEY=your_api_key_here" >> .env
+
+# 5. Start the data collector (in one terminal)
+python -m src.main
+
+# 6. Start the dashboard (in a second terminal)
+streamlit run app.py
+```
+
+The dashboard opens automatically at **http://localhost:8501**.
+
+---
+
+## Installation (Docker)
+
+### Prerequisites
+
+- Docker
+- Docker Compose
+
+### Steps
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/Patxita/PVProjekt_THI.git
+cd PVProjekt_THI
+
+# 2. Create a .env file with your API credentials (never commit this file!)
+echo "PV_API_URL=https://jupyterhub-wi.rz.fh-ingolstadt.de:8443/data" > .env
+echo "PV_API_KEY=your_api_key_here" >> .env
+
+# 3. Build and start both services
 docker compose up --build
 ```
 
-Then open:
-- **Grafana dashboard:** http://localhost:3000  (login `admin` / `admin`)
-- **Prometheus:** http://localhost:9090
-- **Collector metrics:** http://localhost:8000/metrics
+The dashboard is then available at **http://localhost:8501**.
 
-Stop with `Ctrl+C`, then `docker compose down`.
+To stop: `docker compose down`
 
-## Project structure
+---
 
-```
-src/
-  main.py                 # collection loop (entry point)
-  backend/
-    models.py             # PVReading data contract
-    interfaces.py         # PVDataSource protocol
-    mock_source.py        # mock data generator
-    client.py             # real API client (stub until API exists)
-    data_cleaner.py       # validates/repairs readings
-    metrics.py            # derives KPIs (self-consumption, autarky, energy)
-    data_storage.py       # Prometheus exporter
-tests/                    # unit + integration tests
-prometheus/prometheus.yml # scrape config
-grafana/provisioning/     # auto-loaded datasource + dashboard
-docs/                     # dashboard spec, task distribution, images
-```
-
-## Metrics & KPIs
-
-See [docs/dashboard_spec.md](docs/dashboard_spec.md) for the full specification of
-collected metrics, derived KPIs, and dashboard panels.
-
-![Dashboard](docs/images/dashboard_01.png)
-![Dashboard](docs/images/dashboard_02.png)
-
-## Development
+## Running the Tests
 
 ```bash
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements-dev.txt
-python -m pytest -v                 # run tests
-ruff check . && black --check .     # lint + format check
+pytest tests/ -v
 ```
 
-## CI
+---
 
-GitHub Actions (`.github/workflows/ci.yml`) runs ruff, black, and pytest on every
-push/PR, then builds the Docker image to verify containerization.
+## Environment Variables
 
-## Switching from mock data to the real API
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `PV_API_URL` | URL of the PV data API | Yes (for live data) |
+| `PV_API_KEY` | API key for authentication | Yes (for live data) |
 
-1. Put the endpoint in a local `.env` file (gitignored): `PV_API_URL=https://...`
-2. In `src/main.py`, change `source = MockPVSource()` to `source = ApiClient()`.
-3. Implement `ApiClient.fetch` / `_parse` against the API specification.
+These must be stored in a `.env` file or set in your environment. They are listed in `.gitignore` and must **never** be committed to version control.
 
-No other code changes are needed — both classes implement `PVDataSource`.
+---
 
-## Assumptions & simplifications
+## Team
 
-- The PV system exposes instantaneous **power in watts (W)**; energy (Wh/kWh) is derived.
-- The mock solar curve uses **UTC** time, so the generation peak occurs at 12:00 UTC.
-- Mock peak power (30 kW) and base load (5 kW) are plausible placeholders, to be replaced with the real array's rated power once known.
-
-## Team & task distribution
-
-See [docs/task_distribution.md](docs/task_distribution.md).
+| Name | Role |
+|------|------|
+| Franziska | Storage, frontend, Docker, CI/CD |
+| Natalia | API client, data cleaning, metrics, tests |

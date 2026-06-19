@@ -1,63 +1,29 @@
-## Team
+# Task Distribution
 
-| Name                  | Git-Identität                                    |
-|-----------------------|--------------------------------------------------|
-| Franziska Pudelek     | `Franziska Pudelek <frp0526@thi.de>` (`Patxita`) |
-| Natalia Aldrett Gomez | `z00547vv <naa1438@thi.de>`                      |
+## 🟦 Natalia — Data ingestion & calculation
 
-## Architecture
+| # | Task | File(s) | Status |
+|---|------|---------|--------|
+| N1 | Implement the live API client — `fetch()` + `_parse()` against the real endpoint | `src/backend/client.py` | ⏳ In progress |
+| N2 | Adjust DataCleaner for the real payload (types, missing values, units) + error handling/logging | `src/backend/data_cleaner.py` | ⏳ In progress |
+| N3 | Calculation module — current values + day/month/year totals + PV-to-total consumption ratios | `src/backend/metrics.py` | ⚠️ Partial |
+| N4 | Tests for client, cleaner, metrics (+ end-to-end fetch→clean→store→aggregate integration test) | `tests/` | ⚠️ Partial |
 
-Project: PV Monitoring Dashboard — THI
+## 🟥 Franziska — Storage, frontend, Docker, CI/CD
 
-Stack: **SQLite** (data storage) + **Streamlit** (frontend). The earlier
-Prometheus + Grafana setup was dropped — the assignment explicitly forbids
-Grafana ("kein Grafana") and requires named data-storage and calculation
-modules plus pie charts.
+| # | Task | File(s) | Status |
+|---|------|---------|--------|
+| F1 | Build the SQLite storage module — schema, `insert(reading)`, query helpers by time range | `src/backend/data_storage.py` | ✅ Done |
+| F2 | Storage tests — unit tests for insert + range queries | `tests/test_data_storage.py` | ✅ Done |
+| F3 | Streamlit dashboard — metric cards, time-series chart, 3 pie charts, auto-refresh | `app.py` | ✅ Done |
+| F4 | Collection loop — wire `main.py` to use `ApiClient` + SQLite store | `src/main.py` | ✅ Done |
+| F5 | Docker — rewrite docker-compose (collector + Streamlit + shared volume, no Grafana/Prometheus) + Dockerfile | `docker-compose.yml`, `Dockerfile` | ✅ Done |
+| F6 | CI/CD pipeline — ruff + black + pytest + docker build | `.github/workflows/ci.yml` | ✅ Done |
 
-```
-THI API ──▶ ApiClient ──▶ DataCleaner ──▶ SQLite store   (collector loop, every 5 s)
-                                              │
-                                              ▼
-                          Calculation module (day / month / year + ratios)
-                                              │
-                                              ▼
-                                    Streamlit dashboard
-```
+## 🟩 Shared
 
-## Task Distribution
-
-### Natalia — Data ingestion & calculation
-
-| #  | Task                                                                            |
-|----|---------------------------------------------------------------------------------|
-| N1 | Live API client — implement `fetch()` + `_parse()` against the real endpoint    |
-| N2 | Data cleaning — adapt `DataCleaner` to the real payload, error handling/logging  |
-| N3 | Calculation module — current values, day/month/year totals, PV-to-total ratios   |
-| N4 | Tests for client, cleaner, metrics + end-to-end integration test (with F2)       |
-
-### Franziska — Storage, frontend, Docker, CI/CD
-
-| #  | Task                                                                            |
-|----|---------------------------------------------------------------------------------|
-| F1 | SQLite storage module — schema, `insert(reading)`, range query helpers           |
-| F2 | Storage tests — insert + range queries (pairs with N4's integration test)        |
-| F3 | Streamlit dashboard — metric cards, generation/consumption time series, pie charts |
-| F4 | Collection loop — wire `main.py` to `ApiClient` + SQLite store                    |
-| F5 | Docker — docker-compose (collector + Streamlit + shared volume) + Dockerfile(s)  |
-| F6 | CI/CD pipeline — ruff + black + pytest + docker build + deploy step               |
-
-### Shared
-
-| #  | Task                                                                            |
-|----|---------------------------------------------------------------------------------|
-| S1 | Git workflow — feature branches + pull requests (no direct commits to `main`)    |
-| S2 | Cleanup — remove `grafana/`, `prometheus/`, `prometheus-client` dependency        |
-| S3 | Documentation — dashboard spec, README install guide, dashboard screenshot        |
-
-**Shared contract:** F1 (SQLite schema) and N3 (calculation module return shapes)
-are the interfaces both tracks depend on — agreed jointly before parallel work begins.
-
-## Collaboration
-
-- Git workflow: feature branches merged into `main` via pull request
-- Communication: mostly in-person sessions
+| # | Task | Status |
+|---|------|--------|
+| S1 | Switch to feature branches + PRs (stop committing to `main`) | ✅ Done |
+| S2 | Cleanup — delete `grafana/`, `prometheus/`, remove `prometheus-client` dep | ✅ Done |
+| S3 | Docs — rewrite `dashboard_spec.md`, update `task_distribution.md`, README install, dashboard screenshot | ✅ Done |

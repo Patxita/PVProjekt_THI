@@ -1,35 +1,44 @@
-services:
-  collector:                       # your Python app: fetch -> clean -> export
-    build: PVProjekt
-    container_name: pv_collector
-    ports:
-      - "8000:8000"                # /metrics endpoint
+version: "3.9"
 
-  prometheus:                      # the time-series database
-    image: prom/prometheus:latest
-    container_name: pv_prometheus
-    ports:
-      - "9090:9090"
+# PV Dashboard – two services share one named volume for the SQLite database.
+#
+#   collector   runs src/main.py  → writes readings to /app/data/pv.db
+#   dashboard   runs app.py       → reads from  /app/data/pv.db
+#
+# The API key must be supplied via a .env file (see README) and is NEVER
+# committed to version control.
+
+services:
+
+  collector:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["python", "-m", "src.main"]
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus-data:/prometheus        # <-- persist time-series across restarts
+      - pv_data:/app/data
+    environment:
+      # The real API URL and key are injected at runtime from a .env file.
+      # Example .env contents (DO NOT COMMIT):
+      #   PV_API_URL=https://jupyterhub-wi.rz.fh-ingolstadt.de:8443/data
+      #   PV_API_KEY=d1e88a3131ade56eac79c...
+      - PV_API_URL=${PV_API_URL:-}
+      - PV_API_KEY=${PV_API_KEY:-}
+    restart: unless-stopped
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+    volumes:
+      - pv_data:/app/data
+    ports:
+      - "8501:8501"
     depends_on:
       - collector
+    restart: unless-stopped
 
-  grafana:                         # the dashboard / frontend
-    image: grafana/grafana:latest
-    container_name: pv_grafana
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./grafana/provisioning:/etc/grafana/provisioning:ro
-      - grafana-data:/var/lib/grafana        # <-- persist login & Grafana state
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin   # dev only — fine for a student project
-    depends_on:
-      - prometheus
-
-volumes:                           # named volumes managed by Docker
-  prometheus-data:
-  grafana-data:
+volumes:
+  pv_data:
+    driver: local
