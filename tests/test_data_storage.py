@@ -133,4 +133,5 @@ class TestQueryRange:
         r = _reading(0)
         store.insert(r)
         rows = store.query_range(r.timestamp, r.timestamp)
+
         assert rows == []
