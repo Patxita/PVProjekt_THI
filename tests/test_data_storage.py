@@ -93,7 +93,7 @@ class TestQueryRange:
             store.insert(_reading(offset))
 
         start = datetime(2024, 6, 15, 10, 0, 5, tzinfo=timezone.utc)
-        end = datetime(2024, 6, 15, 10, 0, 16, tzinfo=timezone.utc)
+        end = datetime(2024, 6, 15, 10, 0, 15, tzinfo=timezone.utc)
         rows = store.query_range(start, end)
 
         # offset=5 and offset=10 fall in [start, end); offset=15 is excluded
@@ -133,4 +133,5 @@ class TestQueryRange:
         r = _reading(0)
         store.insert(r)
         rows = store.query_range(r.timestamp, r.timestamp)
+
         assert rows == []
