@@ -17,6 +17,7 @@ import requests
 from src.backend.config import API_KEY, API_URL
 from src.backend.models import PVReading
 
+
 class ApiClient:
     """Fetches live PV readings from the university's HTTP API.
 
