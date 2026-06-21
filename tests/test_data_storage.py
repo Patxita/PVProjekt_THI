@@ -5,8 +5,9 @@ Tests cover schema creation, single-row insert, range queries, the
 in-memory SQLite database so no files are created on disk.
 """
 
-import pytest
 from datetime import datetime, timezone, timedelta
+
+import pytest
 
 from src.backend.data_storage import SQLiteStorage
 from src.backend.models import PVReading

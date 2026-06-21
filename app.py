@@ -9,8 +9,8 @@ Layout
 - Time-series chart: today's generation (Wh cumulative) and consumption (W)
 - Three pie charts: PV-vs-total ratio for today / current month / current year
 
-Notes
------
+Notes:
+------
 All energy (Wh) and autarky values are derived on read from the raw power
 readings stored by ``src/main.py``; they are never stored themselves.
 """
@@ -93,7 +93,10 @@ def _year_range() -> tuple[datetime, datetime]:
     return start, now
 
 
-def _readings_to_df(readings: list, interval_s: float = COLLECTION_INTERVAL_S) -> pd.DataFrame:
+def _readings_to_df(
+        readings: list,
+        interval_s: float = COLLECTION_INTERVAL_S
+) -> pd.DataFrame:
     """Convert a list of :class:`PVReading` objects to a pandas DataFrame.
 
     Adds a cumulative ``pv_energy_wh`` column computed from power and the
@@ -203,7 +206,10 @@ def render_dashboard() -> None:
     st.subheader("⚡ Current values")
 
     if latest is None:
-        st.info("No readings yet. Start the collector (`python -m src.main`) and refresh.")
+        st.info(
+            "No readings yet. Start the collector"
+            "(`python -m src.main`) and refresh."
+        )
         store.close()
         return
 

@@ -5,16 +5,16 @@ Fetches readings from the real PV API and adapts them into the project's
 so it is a drop-in replacement for :class:`MockPVSource` once the API is
 available.
 
-The endpoint URL and any credentials are read from environment variables and
-are never hard-coded, keeping secrets out of version control. §§§§ cambiarlooo The concrete
-request/parse logic is left unimplemented until the API specification is
-provided by the university.
+The endpoint URL and credentials are read from environment variables
+and never hard-coded. The client fetches live data from the THI PV API
+and converts the API payload into the project's PVReading contract.
 """
 
-import requests
-from src.backend.config import API_KEY
-from src.backend.config import API_URL
 from datetime import datetime
+
+import requests
+
+from src.backend.config import API_KEY, API_URL
 from src.backend.models import PVReading
 
 class ApiClient:

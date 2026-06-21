@@ -1,6 +1,9 @@
-from pathlib import Path
-from dotenv import load_dotenv
+"""Application configuration loaded from environment variables."""
+
 import os
+from pathlib import Path
+
+from dotenv import load_dotenv
 
 env_path = Path(__file__).resolve().parents[2] / '.env'
 load_dotenv()
