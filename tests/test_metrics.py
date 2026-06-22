@@ -61,3 +61,71 @@ class TestMetricsCalculator:
     def test_energy_increment_conversion(self) -> None:
         """3600 W sustained for 1 s equals exactly 1 Wh."""
         assert MetricsCalculator().energy_increment_wh(3600, 1) == pytest.approx(1.0)
+
+    def test_autarky_period_partial_coverage(self) -> None:
+        """Period autarky equals covered consumption divided by total consumption."""
+        readings = [
+            make_reading(500, 1000),
+            make_reading(1000, 1000),
+        ]
+
+        result = MetricsCalculator().autarky_period(readings)
+
+        assert result == pytest.approx(0.75)
+
+    def test_autarky_period_zero_consumption(self) -> None:
+        """Period autarky is 1.0 when total consumption is zero."""
+        readings = [
+            make_reading(1000, 0),
+            make_reading(500, 0),
+        ]
+
+        result = MetricsCalculator().autarky_period(readings)
+
+        assert result == 1.0
+
+    def test_total_generation_wh(self) -> None:
+        """Generation energy is accumulated across all readings."""
+        readings = [
+            make_reading(3600, 0),
+            make_reading(3600, 0),
+        ]
+
+        result = MetricsCalculator().total_generation_wh(
+            readings,
+            interval_s=1,
+        )
+
+        assert result == pytest.approx(2.0)
+
+    def test_total_consumption_wh(self) -> None:
+        """Consumption energy is accumulated across all readings."""
+        readings = [
+            make_reading(0, 3600),
+            make_reading(0, 3600),
+        ]
+
+        result = MetricsCalculator().total_consumption_wh(
+            readings,
+            interval_s=1,
+        )
+
+        assert result == pytest.approx(2.0)
+
+        def test_period_summary(self) -> None:
+            """Period summary returns all KPI values."""
+            readings = [
+                make_reading(3600, 3600),
+                make_reading(3600, 7200),
+            ]
+
+            result = MetricsCalculator().period_summary(
+                readings,
+                interval_s=1,
+            )
+
+            assert result["generation_wh"] == pytest.approx(2.0)
+
+            assert result["consumption_wh"] == pytest.approx(3.0)
+
+            assert result["autarky"] == pytest.approx((3600 + 3600) / (3600 + 7200))
