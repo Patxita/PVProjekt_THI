@@ -10,6 +10,13 @@ target-version = "py312"
 # E/F = pycodestyle+pyflakes, I = import sorting, D = docstring checks
 select = ["E", "F", "I", "D"]
 ignore = ["D203", "D213"]   # two mutually-exclusive docstring rules; pick the others
+extend-select = ["D417"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"        # enforce the Google docstring style you've been using

@@ -64,7 +64,6 @@ class MetricsCalculator:
             float: Value in [0.0, 1.0]. Returns 1.0 when total
             consumption is 0.
         """
-
         total_consumption = sum(r.consumption_power for r in readings)
 
         total_self_consumption = sum(
@@ -100,17 +99,14 @@ class MetricsCalculator:
         readings: list[PVReading],
         interval_s: float,
     ) -> float:
-        """Calculate autarky for a collection of readings.
-
-        Autarky is the fraction of total consumption that was covered by
-        PV generation during the analysed period.
+        """Calculate total energy generation for a period.
 
         Args:
             readings: Readings belonging to the analysed period.
+            interval_s: Sampling interval in seconds.
 
         Returns:
-            float: Value in [0.0, 1.0]. Returns 1.0 when total
-            consumption is 0.
+            float: Generated energy in Wh.
         """
         return sum(
             self.energy_increment_wh(
@@ -156,7 +152,6 @@ class MetricsCalculator:
         Returns:
             dict[str, float]: Dashboard metrics for the period.
         """
-
         return {
             "generation_wh": self.total_generation_wh(
                 readings,

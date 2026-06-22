@@ -17,7 +17,6 @@ readings stored by ``src/main.py``; they are never stored themselves.
 
 import logging
 from datetime import datetime, timezone
-
 from pathlib import Path
 
 import pandas as pd
