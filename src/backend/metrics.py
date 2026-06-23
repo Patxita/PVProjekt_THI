@@ -48,6 +48,38 @@ class MetricsCalculator:
             return 1.0
         return self.self_consumption_w(reading) / reading.consumption_power
 
+    def autarky_period(
+        self,
+        readings: list[PVReading],
+    ) -> float:
+        """Calculate autarky for a collection of readings.
+
+        Autarky is the fraction of total consumption that was covered by
+        PV generation during the analysed period.
+
+        Args:
+            readings: Readings belonging to the analysed period.
+
+        Returns:
+            float: Value in [0.0, 1.0]. Returns 1.0 when total
+            consumption is 0.
+        """
+        total_consumption = sum(r.consumption_power for r in readings)
+
+        total_self_consumption = sum(
+            min(
+                r.pv_power,
+                r.consumption_power,
+            )
+            for r in readings
+        )
+
+        if total_consumption <= 0:
+            return 1.0
+
+        return total_self_consumption / total_consumption
+
+
     def energy_increment_wh(self, power_w: float, interval_s: float) -> float:
         """Convert an average power over an interval into energy.
 
@@ -61,3 +93,75 @@ class MetricsCalculator:
             float: Energy produced/consumed during the interval, in Wh.
         """
         return power_w * interval_s / 3600.0
+
+    def total_generation_wh(
+        self,
+        readings: list[PVReading],
+        interval_s: float,
+    ) -> float:
+        """Calculate total energy generation for a period.
+
+        Args:
+            readings: Readings belonging to the analysed period.
+            interval_s: Sampling interval in seconds.
+
+        Returns:
+            float: Generated energy in Wh.
+        """
+        return sum(
+            self.energy_increment_wh(
+                reading.pv_power,
+                interval_s,
+            )
+            for reading in readings
+        )
+
+    def total_consumption_wh(
+        self,
+        readings: list[PVReading],
+        interval_s: float,
+    ) -> float:
+        """Calculate total energy consumption for a period.
+
+        Args:
+            readings: Readings belonging to the analysed period.
+            interval_s: Sampling interval in seconds.
+
+        Returns:
+            float: Consumed energy in Wh.
+        """
+        return sum(
+            self.energy_increment_wh(
+                reading.consumption_power,
+                interval_s,
+            )
+            for reading in readings
+        )
+
+    def period_summary(
+        self,
+        readings: list[PVReading],
+        interval_s: float,
+    ) -> dict[str, float]:
+        """Calculate all dashboard KPIs for a period.
+
+        Args:
+            readings: Readings belonging to the analysed period.
+            interval_s: Sampling interval in seconds.
+
+        Returns:
+            dict[str, float]: Dashboard metrics for the period.
+        """
+        return {
+            "generation_wh": self.total_generation_wh(
+                readings,
+                interval_s,
+            ),
+            "consumption_wh": self.total_consumption_wh(
+                readings,
+                interval_s,
+            ),
+            "autarky": self.autarky_period(
+                readings,
+            ),
+        }

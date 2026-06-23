@@ -88,7 +88,7 @@ def main() -> None:
                 cleaned = cleaner.clean(reading)
                 if cleaned is not None:
                     store.insert(cleaned)
-                    logger.debug("Stored reading: %s", cleaned)
+                    logger.info("Stored reading: %s", cleaned) #antes tenia .debug
                 else:
                     logger.warning("Reading rejected by cleaner; skipped")
             except Exception:

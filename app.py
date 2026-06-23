@@ -9,14 +9,15 @@ Layout
 - Time-series chart: today's generation (Wh cumulative) and consumption (W)
 - Three pie charts: PV-vs-total ratio for today / current month / current year
 
-Notes
------
+Notes:
+------
 All energy (Wh) and autarky values are derived on read from the raw power
 readings stored by ``src/main.py``; they are never stored themselves.
 """
 
 import logging
 from datetime import datetime, timezone
+from pathlib import Path
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -57,6 +58,11 @@ def _load_store() -> SQLiteStorage:
     Returns:
         SQLiteStorage: A connection to the database at ``DB_PATH``.
     """
+    Path(DB_PATH).parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
     return SQLiteStorage(DB_PATH)
 
 
@@ -93,7 +99,10 @@ def _year_range() -> tuple[datetime, datetime]:
     return start, now
 
 
-def _readings_to_df(readings: list, interval_s: float = COLLECTION_INTERVAL_S) -> pd.DataFrame:
+def _readings_to_df(
+        readings: list,
+        interval_s: float = COLLECTION_INTERVAL_S
+) -> pd.DataFrame:
     """Convert a list of :class:`PVReading` objects to a pandas DataFrame.
 
     Adds a cumulative ``pv_energy_wh`` column computed from power and the
@@ -203,7 +212,10 @@ def render_dashboard() -> None:
     st.subheader("⚡ Current values")
 
     if latest is None:
-        st.info("No readings yet. Start the collector (`python -m src.main`) and refresh.")
+        st.info(
+            "No readings yet. Start the collector"
+            "(`python -m src.main`) and refresh."
+        )
         store.close()
         return
 
@@ -230,17 +242,21 @@ def render_dashboard() -> None:
 
     if day_readings:
         day_df = _readings_to_df(day_readings)
-        total_gen_wh = day_df["pv_energy_wh"].iloc[-1]
-        total_cons_wh = (
-            day_df["consumption_power"] * COLLECTION_INTERVAL_S / 3600.0
-        ).sum()
+
+        day_summary = calc.period_summary(
+            day_readings,
+            COLLECTION_INTERVAL_S,
+        )
+
+        total_gen_wh = day_summary["generation_wh"]
+
+        total_cons_wh = day_summary["consumption_wh"]
+
+        day_autarky = day_summary["autarky"] * 100
+
         total_import_wh = (
             day_df["grid_import_power"] * COLLECTION_INTERVAL_S / 3600.0
         ).sum()
-        total_self = sum(calc.self_consumption_w(r) for r in day_readings)
-        total_cons = sum(r.consumption_power for r in day_readings)
-        day_autarky = (total_self / total_cons * 100) if total_cons > 0 else 100.0
-
         c1.metric("PV generated (today)", f"{total_gen_wh:,.0f} Wh")
         c2.metric("Consumed (today)", f"{total_cons_wh:,.0f} Wh")
         c3.metric("Grid import (today)", f"{total_import_wh:,.0f} Wh")
@@ -260,32 +276,20 @@ def render_dashboard() -> None:
     month_readings = store.query_range(*_month_range())
     year_readings = store.query_range(*_year_range())
 
-    def _sum_energy_wh(rdgs: list) -> float:
-        """Sum PV-generated energy in Wh across a list of readings.
+    month_summary = calc.period_summary(
+        month_readings,
+        COLLECTION_INTERVAL_S,
+    )
 
-        Args:
-            rdgs: List of :class:`PVReading` objects.
+    year_summary = calc.period_summary(
+        year_readings,
+        COLLECTION_INTERVAL_S,
+    )
 
-        Returns:
-            float: Total energy in Wh.
-        """
-        return sum(r.pv_power * COLLECTION_INTERVAL_S / 3600.0 for r in rdgs)
-
-    def _sum_cons_wh(rdgs: list) -> float:
-        """Sum consumed energy in Wh across a list of readings.
-
-        Args:
-            rdgs: List of :class:`PVReading` objects.
-
-        Returns:
-            float: Total energy in Wh.
-        """
-        return sum(r.consumption_power * COLLECTION_INTERVAL_S / 3600.0 for r in rdgs)
-
-    m1.metric("PV generated (month)", f"{_sum_energy_wh(month_readings):,.0f} Wh")
-    m2.metric("Consumed (month)", f"{_sum_cons_wh(month_readings):,.0f} Wh")
-    y1.metric("PV generated (year)", f"{_sum_energy_wh(year_readings):,.0f} Wh")
-    y2.metric("Consumed (year)", f"{_sum_cons_wh(year_readings):,.0f} Wh")
+    m1.metric("PV generated (month)",f"{month_summary['generation_wh']:,.0f} Wh")
+    m2.metric("Consumed (month)", f"{month_summary['consumption_wh']:,.0f} Wh")
+    y1.metric("PV generated (year)", f"{year_summary['generation_wh']:,.0f} Wh")
+    y2.metric("Consumed (year)", f"{year_summary['consumption_wh']:,.0f} Wh")
 
     st.divider()
 
