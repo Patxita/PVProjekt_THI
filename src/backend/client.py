@@ -14,7 +14,7 @@ from datetime import datetime
 
 import requests
 
-from src.backend.config import API_KEY, API_URL
+from src.backend.config import require_config
 from src.backend.models import PVReading
 
 
@@ -34,13 +34,8 @@ class ApiClient:
                 ``PV_API_URL`` environment variable so the real address
                 never appears in source control.
             timeout: Per-request timeout in seconds.
-
-        Raises:
-            ValueError: If no URL is given and ``PV_API_URL`` is unset.
         """
-        self.url = url or API_URL
-        if not self.url:
-            raise ValueError("No API URL provided and PV_API_URL is unset.")
+        self._url_override = url
         self.timeout = timeout
 
     def fetch(self) -> PVReading:
@@ -50,38 +45,31 @@ class ApiClient:
             PVReading: The latest measurement, with all power values in W.
 
         Raises:
-            ConnectionError: If the API cannot be reached.
+            ConnectionError: If the API cannot be reached or config is missing.
         """
+        api_url, api_key = require_config()
+        url = self._url_override or api_url
+
         try:
             response = requests.get(
-                self.url,
-                headers={
-                    "X-API-Key": API_KEY,
-                },
+                url,
+                headers={"X-API-Key": api_key},
                 timeout=self.timeout,
-                verify=False, # THI self-signed certificate
+                verify=False,  # THI self-signed certificate
             )
-
             response.raise_for_status()
 
             payload = response.json()
 
             if "data" not in payload:
                 raise ValueError("Invalid API response: missing 'data'")
-
             if "collected_at" not in payload:
-                raise ValueError(
-                    "Invalid API response: missing 'collected_at'"
-                )
+                raise ValueError("Invalid API response: missing 'collected_at'")
 
             return self._parse(payload)
 
         except requests.RequestException as exc:
-            raise ConnectionError(
-                f"Could not reach PV API: {exc}"
-            ) from exc
-
-
+            raise ConnectionError(f"Could not reach PV API: {exc}") from exc
 
     def _parse(self, payload: dict) -> PVReading:
         """Convert a raw API JSON payload into a :class:`PVReading`.
@@ -94,30 +82,20 @@ class ApiClient:
 
         Raises:
             KeyError: If an expected field is missing from ``payload``.
-            NotImplementedError: Until the API field names are known.
         """
-        timestamp = datetime.fromisoformat(
-            payload["collected_at"]
-        )
+        timestamp = datetime.fromisoformat(payload["collected_at"])
 
         pv_power = 0.0
         consumption_power = 0.0
 
         for item in payload["data"]:
-            value = float(item.get("value",0))
-
+            value = float(item.get("value", 0))
             if item["type"] == "generation":
                 pv_power += value
-
             elif item["type"] == "consumption":
                 consumption_power += value
 
-        # Grid import is not provided by the API.
-        # It is derived as the remaining demand not covered by PV generation.
-        grid_import_power = max(
-            0.0,
-            consumption_power - pv_power,
-        )
+        grid_import_power = max(0.0, consumption_power - pv_power)
 
         return PVReading(
             timestamp=timestamp,
