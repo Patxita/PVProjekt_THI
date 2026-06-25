@@ -79,7 +79,6 @@ class MetricsCalculator:
 
         return total_self_consumption / total_consumption
 
-
     def energy_increment_wh(self, power_w: float, interval_s: float) -> float:
         """Convert an average power over an interval into energy.
 

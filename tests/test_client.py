@@ -37,11 +37,7 @@ class TestApiClient:
 
         reading = client._parse(payload)
 
-        expected_generation = (
-            139447.546875
-            + 2732.294921875
-            + 30276.15625
-        )
+        expected_generation = 139447.546875 + 2732.294921875 + 30276.15625
 
         assert reading.pv_power == expected_generation
         assert reading.consumption_power == 268484.25
