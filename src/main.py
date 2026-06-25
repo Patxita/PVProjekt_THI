@@ -53,9 +53,7 @@ def _build_source():
     if os.environ.get("PV_API_URL"):
         logger.info("PV_API_URL found — using live ApiClient")
         return ApiClient()
-    logger.warning(
-        "PV_API_URL not set — using MockPVSource (no live data)"
-    )
+    logger.warning("PV_API_URL not set — using MockPVSource (no live data)")
     return MockPVSource()
 
 
@@ -88,7 +86,7 @@ def main() -> None:
                 cleaned = cleaner.clean(reading)
                 if cleaned is not None:
                     store.insert(cleaned)
-                    logger.info("Stored reading: %s", cleaned) #antes tenia .debug
+                    logger.info("Stored reading: %s", cleaned)  # antes tenia .debug
                 else:
                     logger.warning("Reading rejected by cleaner; skipped")
             except Exception:
