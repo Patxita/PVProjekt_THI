@@ -100,8 +100,7 @@ def _year_range() -> tuple[datetime, datetime]:
 
 
 def _readings_to_df(
-        readings: list,
-        interval_s: float = COLLECTION_INTERVAL_S
+    readings: list, interval_s: float = COLLECTION_INTERVAL_S
 ) -> pd.DataFrame:
     """Convert a list of :class:`PVReading` objects to a pandas DataFrame.
 
@@ -213,8 +212,7 @@ def render_dashboard() -> None:
 
     if latest is None:
         st.info(
-            "No readings yet. Start the collector"
-            "(`python -m src.main`) and refresh."
+            "No readings yet. Start the collector" "(`python -m src.main`) and refresh."
         )
         store.close()
         return
@@ -286,7 +284,7 @@ def render_dashboard() -> None:
         COLLECTION_INTERVAL_S,
     )
 
-    m1.metric("PV generated (month)",f"{month_summary['generation_wh']:,.0f} Wh")
+    m1.metric("PV generated (month)", f"{month_summary['generation_wh']:,.0f} Wh")
     m2.metric("Consumed (month)", f"{month_summary['consumption_wh']:,.0f} Wh")
     y1.metric("PV generated (year)", f"{year_summary['generation_wh']:,.0f} Wh")
     y2.metric("Consumed (year)", f"{year_summary['consumption_wh']:,.0f} Wh")
@@ -359,6 +357,7 @@ def render_dashboard() -> None:
 
     # Auto-refresh
     st.empty()
+
 
 # ---------------------------------------------------------------------------
 # Entry point
