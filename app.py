@@ -359,8 +359,6 @@ def render_dashboard() -> None:
 
     # Auto-refresh
     st.empty()
-    st.rerun() if False else None  # placeholder — actual rerun below
-
 
 # ---------------------------------------------------------------------------
 # Entry point
