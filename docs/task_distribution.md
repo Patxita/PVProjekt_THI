@@ -4,10 +4,10 @@
 
 | # | Task | File(s) | Status |
 |---|------|---------|--------|
-| N1 | Implement the live API client — `fetch()` + `_parse()` against the real endpoint | `src/backend/client.py` | ⏳ In progress |
-| N2 | Adjust DataCleaner for the real payload (types, missing values, units) + error handling/logging | `src/backend/data_cleaner.py` | ⏳ In progress |
-| N3 | Calculation module — current values + day/month/year totals + PV-to-total consumption ratios | `src/backend/metrics.py` | ⚠️ Partial |
-| N4 | Tests for client, cleaner, metrics (+ end-to-end fetch→clean→store→aggregate integration test) | `tests/` | ⚠️ Partial |
+| N1 | Implement the live API client — `fetch()` + `_parse()` against the real endpoint | `src/backend/client.py` | ✅ Done |
+| N2 | Adjust DataCleaner for the real payload (types, missing values, units) + error handling/logging | `src/backend/data_cleaner.py` | ✅ Done |
+| N3 | Calculation module — current values + day/month/year totals + PV-to-total consumption ratios | `src/backend/metrics.py` | ✅ Done |
+| N4 | Tests for client, cleaner, metrics (+ end-to-end fetch→clean→store→aggregate integration test) | `tests/` | ✅ Done |
 
 ## 🟥 Franziska — Storage, frontend, Docker, CI/CD
 
