@@ -87,7 +87,6 @@ class DataCleaner:
         Returns:
             PVReading: A new reading with pv_power and consumption_power >= 0.
         """
-
         return PVReading(
             timestamp=reading.timestamp,
             pv_power=max(0.0, reading.pv_power),
