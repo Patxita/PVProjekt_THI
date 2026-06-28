@@ -17,6 +17,14 @@ The system collects live PV data from the university's API every 5 seconds, stor
 
 ---
 
+## Screenshots
+
+### Today's view
+![Today's dashboard](docs/images/dashboard_screenshot_today.png)
+
+### Historical view
+![Historical dashboard](docs/images/dashboard_screenshot_historical.png)
+
 ## Project Structure
 
 ```

@@ -15,7 +15,7 @@
 |---|------|---------|--------|
 | F1 | Build the SQLite storage module — schema, `insert(reading)`, query helpers by time range | `src/backend/data_storage.py` | ✅ Done |
 | F2 | Storage tests — unit tests for insert + range queries | `tests/test_data_storage.py` | ✅ Done |
-| F3 | Streamlit dashboard — metric cards, time-series chart, 3 pie charts, auto-refresh | `app.py` | ✅ Done |
+| F3 | Streamlit dashboard — metric cards, time-series chart, 3 pie charts, auto-refresh, two tabs | `app.py` | ✅ Done |
 | F4 | Collection loop — wire `main.py` to use `ApiClient` + SQLite store | `src/main.py` | ✅ Done |
 | F5 | Docker — rewrite docker-compose (collector + Streamlit + shared volume, no Grafana/Prometheus) + Dockerfile | `docker-compose.yml`, `Dockerfile` | ✅ Done |
 | F6 | CI/CD pipeline — ruff + black + pytest + docker build | `.github/workflows/ci.yml` | ✅ Done |
@@ -26,4 +26,4 @@
 |---|------|--------|
 | S1 | Switch to feature branches + PRs (stop committing to `main`) | ✅ Done |
 | S2 | Cleanup — delete `grafana/`, `prometheus/`, remove `prometheus-client` dep | ✅ Done |
-| S3 | Docs — rewrite `dashboard_spec.md`, update `task_distribution.md`, README install, dashboard screenshot | ✅ Done |
+| S3 | Docs — rewrite `dashboard_spec.md`, update `task_distribution.md`, README install, dashboard screenshots | ✅ Done |
