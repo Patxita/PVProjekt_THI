@@ -1,5 +1,3 @@
-version: "3.9"
-
 # PV Dashboard – two services share one named volume for the SQLite database.
 #
 #   collector   runs src/main.py  → writes readings to /app/data/pv.db
