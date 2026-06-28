@@ -5,18 +5,20 @@ Auto-refreshes every 5 seconds to stay in sync with the collector.
 
 Layout
 ------
-- Header metric cards: current generation/consumption/grid-import
-- Time-series chart: today's generation (Wh cumulative) and consumption (W)
-- Three pie charts: PV-vs-total ratio for today / current month / current year
+- Header metric cards: current generation/consumption/grid power
+- Tab 1 (Today): today's totals, monthly/yearly totals, time-series chart,
+  pie charts
+- Tab 2 (Historical): date picker, daily summary table, CSV export
 
 Notes:
-------
+-----
 All energy (Wh) and autarky values are derived on read from the raw power
 readings stored by ``src/main.py``; they are never stored themselves.
 """
 
 import logging
-from datetime import datetime, timezone
+import time
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 import pandas as pd
@@ -32,8 +34,9 @@ from src.backend.metrics import MetricsCalculator
 # ---------------------------------------------------------------------------
 
 DB_PATH = "data/pv.db"
-REFRESH_INTERVAL_S = 5  # seconds between auto-refresh calls
-COLLECTION_INTERVAL_S = 5  # assumed interval between readings (for Wh calc)
+REFRESH_INTERVAL_S = 5
+COLLECTION_INTERVAL_S = 5
+CEST = timezone(timedelta(hours=2))
 
 logger = logging.getLogger(__name__)
 
@@ -53,28 +56,28 @@ st.set_page_config(
 
 
 def _load_store() -> SQLiteStorage:
-    """Open a cached :class:`SQLiteStorage` connection.
+    """Open a :class:`SQLiteStorage` connection.
 
     Returns:
         SQLiteStorage: A connection to the database at ``DB_PATH``.
     """
-    Path(DB_PATH).parent.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
-
+    Path(DB_PATH).parent.mkdir(parents=True, exist_ok=True)
     return SQLiteStorage(DB_PATH)
 
 
-def _day_range() -> tuple[datetime, datetime]:
-    """Return midnight-to-now for today in UTC.
+def _day_range(for_date: date | None = None) -> tuple[datetime, datetime]:
+    """Return midnight-to-end-of-day for a given date in UTC.
+
+    Args:
+        for_date: The date to use. Defaults to today.
 
     Returns:
-        tuple[datetime, datetime]: ``(start_of_day, now)`` both UTC-aware.
+        tuple[datetime, datetime]: ``(start_of_day, end_of_day)`` UTC-aware.
     """
-    now = datetime.now(timezone.utc)
-    start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    return start, now
+    d = for_date or date.today()
+    start = datetime(d.year, d.month, d.day, tzinfo=timezone.utc)
+    end = datetime(d.year, d.month, d.day, 23, 59, 59, tzinfo=timezone.utc)
+    return start, end
 
 
 def _month_range() -> tuple[datetime, datetime]:
@@ -133,7 +136,6 @@ def _readings_to_df(
             "grid_power": [r.grid_power for r in readings],
         }
     )
-    # Cumulative energy in Wh (power × interval / 3600)
     df["pv_energy_wh"] = (df["pv_power"] * interval_s / 3600.0).cumsum()
     return df
 
@@ -184,6 +186,48 @@ def _autarky_pie(
     return fig
 
 
+def _timeseries_chart(df: pd.DataFrame) -> go.Figure:
+    """Build a dual-axis time-series chart for generation and consumption.
+
+    Args:
+        df: DataFrame with columns ``timestamp``, ``pv_energy_wh``,
+            ``consumption_power`` as produced by :func:`_readings_to_df`.
+
+    Returns:
+        go.Figure: A Plotly dual-axis line chart.
+    """
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+    fig.add_trace(
+        go.Scatter(
+            x=df["timestamp"],
+            y=df["pv_energy_wh"],
+            name="PV generation (Wh)",
+            line=dict(color="#f5a623", width=2),
+            fill="tozeroy",
+            fillcolor="rgba(245,166,35,0.15)",
+        ),
+        secondary_y=False,
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=df["timestamp"],
+            y=df["consumption_power"],
+            name="Consumption (W)",
+            line=dict(color="#4a90d9", width=2),
+        ),
+        secondary_y=True,
+    )
+    fig.update_yaxes(title_text="Generated energy (Wh)", secondary_y=False)
+    fig.update_yaxes(title_text="Consumption (W)", secondary_y=True)
+    fig.update_xaxes(title_text="Time (CEST)")
+    fig.update_layout(
+        legend=dict(orientation="h", yanchor="bottom", y=1.02),
+        margin=dict(t=20, b=40),
+        hovermode="x unified",
+    )
+    return fig
+
+
 # ---------------------------------------------------------------------------
 # Main dashboard
 # ---------------------------------------------------------------------------
@@ -203,15 +247,16 @@ def render_dashboard() -> None:
     # ------------------------------------------------------------------
     st.title("☀️ PV Monitoring Dashboard – THI Ingolstadt")
     st.caption("Data refreshes every 5 seconds  |  All times CEST (UTC+2)")
+
     # ------------------------------------------------------------------
-    # Latest reading – metric cards
+    # Latest reading – metric cards (always visible, above tabs)
     # ------------------------------------------------------------------
     latest = store.latest()
     st.subheader("⚡ Current values")
 
     if latest is None:
         st.info(
-            "No readings yet. Start the collector" "(`python -m src.main`) and refresh."
+            "No readings yet. Start the collector (`python -m src.main`) and refresh."
         )
         store.close()
         return
@@ -221,143 +266,197 @@ def render_dashboard() -> None:
     col2.metric("Consumption", f"{latest.consumption_power:,.0f} W")
     grid_label = "Grid export ↑" if latest.grid_power < 0 else "Grid import ↓"
     col3.metric(grid_label, f"{abs(latest.grid_power):,.0f} W")
-    col4.metric(
-        "Autarky (now)",
-        f"{calc.autarky_ratio(latest) * 100:.1f} %",
-    )
-    from datetime import timedelta, timezone
+    col4.metric("Autarky (now)", f"{calc.autarky_ratio(latest) * 100:.1f} %")
 
-    CEST = timezone(timedelta(hours=2))
     last_reading_cest = latest.timestamp.astimezone(CEST).strftime("%Y-%m-%d %H:%M:%S")
     st.caption(f"Last reading: {last_reading_cest} CEST")
-    st.divider()
-
-    # ------------------------------------------------------------------
-    # Today's aggregates
-    # ------------------------------------------------------------------
-    day_start, now = _day_range()
-    day_readings = store.query_range(day_start, now)
-
-    st.subheader("📅 Today's totals")
-    c1, c2, c3, c4 = st.columns(4)
-
-    if day_readings:
-        day_df = _readings_to_df(day_readings)
-
-        day_summary = calc.period_summary(
-            day_readings,
-            COLLECTION_INTERVAL_S,
-        )
-
-        total_gen_wh = day_summary["generation_wh"]
-
-        total_cons_wh = day_summary["consumption_wh"]
-
-        day_autarky = day_summary["autarky"] * 100
-
-        total_import_wh = (day_df["grid_power"] * COLLECTION_INTERVAL_S / 3600.0).sum()
-        c1.metric("PV generated (today)", f"{total_gen_wh:,.0f} Wh")
-        c2.metric("Consumed (today)", f"{total_cons_wh:,.0f} Wh")
-        c3.metric("Grid import (today)", f"{total_import_wh:,.0f} Wh")
-        c4.metric("Autarky (today)", f"{day_autarky:.1f} %")
-    else:
-        c1.metric("PV generated (today)", "– Wh")
-        c2.metric("Consumed (today)", "– Wh")
-        c3.metric("Grid import (today)", "– Wh")
-        c4.metric("Autarky (today)", "– %")
-
-    # ------------------------------------------------------------------
-    # Monthly & yearly aggregates
-    # ------------------------------------------------------------------
-    st.subheader("📆 Monthly & yearly totals")
-    m1, m2, y1, y2 = st.columns(4)
-
-    month_readings = store.query_range(*_month_range())
-    year_readings = store.query_range(*_year_range())
-
-    month_summary = calc.period_summary(
-        month_readings,
-        COLLECTION_INTERVAL_S,
-    )
-
-    year_summary = calc.period_summary(
-        year_readings,
-        COLLECTION_INTERVAL_S,
-    )
-
-    m1.metric("PV generated (month)", f"{month_summary['generation_wh']:,.0f} Wh")
-    m2.metric("Consumed (month)", f"{month_summary['consumption_wh']:,.0f} Wh")
-    y1.metric("PV generated (year)", f"{year_summary['generation_wh']:,.0f} Wh")
-    y2.metric("Consumed (year)", f"{year_summary['consumption_wh']:,.0f} Wh")
 
     st.divider()
 
     # ------------------------------------------------------------------
-    # Time-series chart: today's generation (Wh) + consumption (W)
+    # Tabs
     # ------------------------------------------------------------------
-    st.subheader("📈 Today's generation (Wh) and consumption (W)")
+    tab1, tab2 = st.tabs(["📅 Today", "🔍 Historical"])
 
-    if day_readings and not day_df.empty:
-        fig = make_subplots(specs=[[{"secondary_y": True}]])
+    # ==================================================================
+    # TAB 1 — Today
+    # ==================================================================
+    with tab1:
+        day_start, day_end = _day_range()
+        day_readings = store.query_range(day_start, day_end)
 
-        fig.add_trace(
-            go.Scatter(
-                x=day_df["timestamp"],
-                y=day_df["pv_energy_wh"],
-                name="PV generation (Wh)",
-                line=dict(color="#f5a623", width=2),
-                fill="tozeroy",
-                fillcolor="rgba(245,166,35,0.15)",
-            ),
-            secondary_y=False,
+        # Today's totals
+        st.subheader("📅 Today's totals")
+        c1, c2, c3, c4 = st.columns(4)
+
+        if day_readings:
+            day_df = _readings_to_df(day_readings)
+            day_summary = calc.period_summary(day_readings, COLLECTION_INTERVAL_S)
+            total_gen_wh = day_summary["generation_wh"]
+            total_cons_wh = day_summary["consumption_wh"]
+            day_autarky = day_summary["autarky"] * 100
+            total_import_wh = (
+                day_df["grid_power"] * COLLECTION_INTERVAL_S / 3600.0
+            ).sum()
+            c1.metric("PV generated (today)", f"{total_gen_wh:,.0f} Wh")
+            c2.metric("Consumed (today)", f"{total_cons_wh:,.0f} Wh")
+            c3.metric("Grid import (today)", f"{total_import_wh:,.0f} Wh")
+            c4.metric("Autarky (today)", f"{day_autarky:.1f} %")
+        else:
+            day_df = pd.DataFrame()
+            c1.metric("PV generated (today)", "– Wh")
+            c2.metric("Consumed (today)", "– Wh")
+            c3.metric("Grid import (today)", "– Wh")
+            c4.metric("Autarky (today)", "– %")
+
+        # Monthly & yearly totals
+        st.subheader("📆 Monthly & yearly totals")
+        m1, m2, y1, y2 = st.columns(4)
+
+        month_readings = store.query_range(*_month_range())
+        year_readings = store.query_range(*_year_range())
+        month_summary = calc.period_summary(month_readings, COLLECTION_INTERVAL_S)
+        year_summary = calc.period_summary(year_readings, COLLECTION_INTERVAL_S)
+
+        m1.metric("PV generated (month)", f"{month_summary['generation_wh']:,.0f} Wh")
+        m2.metric("Consumed (month)", f"{month_summary['consumption_wh']:,.0f} Wh")
+        y1.metric("PV generated (year)", f"{year_summary['generation_wh']:,.0f} Wh")
+        y2.metric("Consumed (year)", f"{year_summary['consumption_wh']:,.0f} Wh")
+
+        st.divider()
+
+        # Time-series chart
+        st.subheader("📈 Today's generation (Wh) and consumption (W)")
+        if day_readings and not day_df.empty:
+            st.plotly_chart(
+                _timeseries_chart(day_df), width="stretch", key="today_chart"
+            )
+        else:
+            st.info("No data for today yet.")
+
+        st.divider()
+
+        # Pie charts
+        st.subheader("🥧 PV self-coverage ratio")
+        pc1, pc2, pc3 = st.columns(3)
+        pc1.plotly_chart(_autarky_pie(day_readings, calc, "Today"), width="stretch")
+        pc2.plotly_chart(
+            _autarky_pie(month_readings, calc, "This month"), width="stretch"
         )
-        fig.add_trace(
-            go.Scatter(
-                x=day_df["timestamp"],
-                y=day_df["consumption_power"],
-                name="Consumption (W)",
-                line=dict(color="#4a90d9", width=2),
-            ),
-            secondary_y=True,
+        pc3.plotly_chart(
+            _autarky_pie(year_readings, calc, "This year"), width="stretch"
         )
 
-        fig.update_yaxes(title_text="Generated energy (Wh)", secondary_y=False)
-        fig.update_yaxes(title_text="Consumption (W)", secondary_y=True)
-        fig.update_xaxes(title_text="Time (UTC)")
-        fig.update_layout(
-            legend=dict(orientation="h", yanchor="bottom", y=1.02),
-            margin=dict(t=20, b=40),
-            hovermode="x unified",
+    # ==================================================================
+    # TAB 2 — Historical
+    # ==================================================================
+    with tab2:
+
+        # Date picker
+        st.subheader("🔍 Historical data view")
+        selected_date = st.date_input(
+            "Select a date to inspect",
+            value=date.today(),
+            max_value=date.today(),
         )
-        st.plotly_chart(fig, width="stretch")
-    else:
-        st.info("No data for today yet.")
 
-    st.divider()
+        hist_start, hist_end = _day_range(selected_date)
+        hist_readings = store.query_range(hist_start, hist_end)
 
-    # ------------------------------------------------------------------
-    # Pie charts: autarky for today / month / year
-    # ------------------------------------------------------------------
-    st.subheader("🥧 PV self-coverage ratio")
-    pc1, pc2, pc3 = st.columns(3)
+        if hist_readings:
+            hist_df = _readings_to_df(hist_readings)
+            h1, h2, h3, h4 = st.columns(4)
+            hist_gen_wh = hist_df["pv_energy_wh"].iloc[-1]
+            hist_cons_wh = (
+                hist_df["consumption_power"] * COLLECTION_INTERVAL_S / 3600.0
+            ).sum()
+            hist_self = sum(calc.self_consumption_w(r) for r in hist_readings)
+            hist_cons = sum(r.consumption_power for r in hist_readings)
+            hist_autarky = (hist_self / hist_cons * 100) if hist_cons > 0 else 100.0
+            h1.metric("PV generated", f"{hist_gen_wh:,.0f} Wh")
+            h2.metric("Consumed", f"{hist_cons_wh:,.0f} Wh")
+            h3.metric("Autarky", f"{hist_autarky:.1f} %")
+            h4.metric("Readings", f"{len(hist_readings)}")
+            st.plotly_chart(
+                _timeseries_chart(hist_df), width="stretch", key="hist_chart"
+            )
+        else:
+            hist_df = pd.DataFrame()
+            st.info(f"No data available for {selected_date}.")
 
-    pc1.plotly_chart(
-        _autarky_pie(day_readings, calc, "Today"),
-        width="stretch",
-    )
-    pc2.plotly_chart(
-        _autarky_pie(month_readings, calc, "This month"),
-        width="stretch",
-    )
-    pc3.plotly_chart(
-        _autarky_pie(year_readings, calc, "This year"),
-        width="stretch",
-    )
+        st.divider()
+
+        # Daily summary table
+        st.subheader("📊 Daily summary — last 7 days")
+        summary_rows = []
+        for days_ago in range(7):
+            d = date.today() - timedelta(days=days_ago)
+            d_start, d_end = _day_range(d)
+            d_readings = store.query_range(d_start, d_end)
+            if d_readings:
+                d_summary = calc.period_summary(d_readings, COLLECTION_INTERVAL_S)
+                summary_rows.append(
+                    {
+                        "Date": d.strftime("%Y-%m-%d"),
+                        "PV generated (Wh)": f"{d_summary['generation_wh']:,.0f}",
+                        "Consumed (Wh)": f"{d_summary['consumption_wh']:,.0f}",
+                        "Autarky (%)": f"{d_summary['autarky'] * 100:.1f}",
+                        "Readings": len(d_readings),
+                    }
+                )
+            else:
+                summary_rows.append(
+                    {
+                        "Date": d.strftime("%Y-%m-%d"),
+                        "PV generated (Wh)": "–",
+                        "Consumed (Wh)": "–",
+                        "Autarky (%)": "–",
+                        "Readings": 0,
+                    }
+                )
+        st.dataframe(
+            pd.DataFrame(summary_rows), use_container_width=True, hide_index=True
+        )
+
+        st.divider()
+
+        # CSV export
+        st.subheader("💾 Export data")
+        export_col1, export_col2 = st.columns(2)
+
+        with export_col1:
+            day_start2, day_end2 = _day_range()
+            today_readings = store.query_range(day_start2, day_end2)
+            if today_readings:
+                export_df = _readings_to_df(today_readings)[
+                    ["timestamp", "pv_power", "consumption_power", "grid_power"]
+                ]
+                csv_bytes = export_df.to_csv(index=False).encode("utf-8")
+                st.download_button(
+                    label="⬇️ Download today's data as CSV",
+                    data=csv_bytes,
+                    file_name=f"pv_data_{date.today()}.csv",
+                    mime="text/csv",
+                )
+            else:
+                st.info("No data for today to export.")
+
+        with export_col2:
+            if hist_readings:
+                hist_export_df = _readings_to_df(hist_readings)[
+                    ["timestamp", "pv_power", "consumption_power", "grid_power"]
+                ]
+                hist_csv = hist_export_df.to_csv(index=False).encode("utf-8")
+                st.download_button(
+                    label=f"⬇️ Download {selected_date} data as CSV",
+                    data=hist_csv,
+                    file_name=f"pv_data_{selected_date}.csv",
+                    mime="text/csv",
+                )
+            else:
+                st.info("No data for selected date to export.")
 
     store.close()
-
-    # Auto-refresh
-    st.empty()
 
 
 # ---------------------------------------------------------------------------
@@ -365,9 +464,6 @@ def render_dashboard() -> None:
 # ---------------------------------------------------------------------------
 
 render_dashboard()
-
-# Trigger a periodic rerun so the dashboard updates automatically
-import time  # noqa: E402 (import at bottom is intentional here)
 
 time.sleep(REFRESH_INTERVAL_S)
 st.rerun()
