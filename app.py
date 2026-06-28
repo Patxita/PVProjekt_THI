@@ -224,9 +224,10 @@ def render_dashboard() -> None:
         "Autarky (now)",
         f"{calc.autarky_ratio(latest) * 100:.1f} %",
     )
-    from datetime import timezone, timedelta
+    from datetime import timedelta, timezone
     CEST = timezone(timedelta(hours=2))
-    st.caption(f"Last reading: {latest.timestamp.astimezone(CEST):%Y-%m-%d %H:%M:%S} CEST")
+    last_reading_cest = latest.timestamp.astimezone(CEST).strftime("%Y-%m-%d %H:%M:%S")
+    st.caption(f"Last reading: {last_reading_cest} CEST")
     st.divider()
 
     # ------------------------------------------------------------------
@@ -328,7 +329,7 @@ def render_dashboard() -> None:
             margin=dict(t=20, b=40),
             hovermode="x unified",
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
     else:
         st.info("No data for today yet.")
 
@@ -342,15 +343,15 @@ def render_dashboard() -> None:
 
     pc1.plotly_chart(
         _autarky_pie(day_readings, calc, "Today"),
-        use_container_width=True,
+        width="stretch",
     )
     pc2.plotly_chart(
         _autarky_pie(month_readings, calc, "This month"),
-        use_container_width=True,
+        width="stretch",
     )
     pc3.plotly_chart(
         _autarky_pie(year_readings, calc, "This year"),
-        use_container_width=True,
+        width="stretch",
     )
 
     store.close()
