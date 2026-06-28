@@ -21,7 +21,7 @@ def make_reading(pv: float, consumption: float, grid_import: float = 0.0) -> PVR
         timestamp=datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc),
         pv_power=pv,
         consumption_power=consumption,
-        grid_import_power=grid_import,
+        grid_power=grid_import,
     )
 
 
@@ -34,11 +34,11 @@ class TestDataCleaner:
         assert DataCleaner().clean(reading) == reading
 
     def test_negative_values_clamped_to_zero(self) -> None:
-        """Negative power values are clamped to 0."""
+        """Negative pv and consumption are clamped to 0; grid_power may be negative."""
         cleaned = DataCleaner().clean(make_reading(-50, -10, -5))
         assert cleaned.pv_power == 0.0
         assert cleaned.consumption_power == 0.0
-        assert cleaned.grid_import_power == 0.0
+        assert cleaned.grid_power == -5  # grid_power can be negative (feed-in)
 
     def test_implausible_value_rejected(self) -> None:
         """A value above max_power_w causes rejection (returns None)."""

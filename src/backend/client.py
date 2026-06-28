@@ -95,11 +95,11 @@ class ApiClient:
             elif item["type"] == "consumption":
                 consumption_power += value
 
-        grid_import_power = max(0.0, consumption_power - pv_power)
+        grid_power = consumption_power - pv_power
 
         return PVReading(
             timestamp=timestamp,
             pv_power=pv_power,
             consumption_power=consumption_power,
-            grid_import_power=grid_import_power,
+            grid_power=grid_power,
         )

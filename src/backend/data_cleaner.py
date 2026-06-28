@@ -55,7 +55,7 @@ class DataCleaner:
         values = (
             reading.pv_power,
             reading.consumption_power,
-            reading.grid_import_power,
+            reading.grid_power,
         )
         return any(v is None or v != v for v in values)  # v != v is True for NaN
 
@@ -73,22 +73,24 @@ class DataCleaner:
             for v in (
                 reading.pv_power,
                 reading.consumption_power,
-                reading.grid_import_power,
+                abs(reading.grid_power),
             )
         )
 
     def _clamp_negatives(self, reading: PVReading) -> PVReading:
-        """Return a copy of the reading with negative powers clamped to 0.
+        """Return a copy of the reading with negative pv and consumption
+        powers clamped to 0. Grid power may be negative (feed-in to grid).
 
         Args:
             reading: The reading to repair.
 
         Returns:
-            PVReading: A new reading with all power values >= 0.
+            PVReading: A new reading with pv_power and consumption_power >= 0.
         """
+
         return PVReading(
             timestamp=reading.timestamp,
             pv_power=max(0.0, reading.pv_power),
             consumption_power=max(0.0, reading.consumption_power),
-            grid_import_power=max(0.0, reading.grid_import_power),
+            grid_power=reading.grid_power,
         )

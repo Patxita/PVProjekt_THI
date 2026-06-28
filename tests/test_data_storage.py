@@ -43,7 +43,7 @@ def _reading(offset_s: int = 0) -> PVReading:
         timestamp=base + timedelta(seconds=offset_s),
         pv_power=1000.0 + offset_s,
         consumption_power=800.0,
-        grid_import_power=0.0,
+        grid_power=0.0,
     )
 
 
@@ -67,7 +67,7 @@ class TestInsertAndLatest:
         assert got is not None
         assert got.pv_power == pytest.approx(r.pv_power)
         assert got.consumption_power == pytest.approx(r.consumption_power)
-        assert got.grid_import_power == pytest.approx(r.grid_import_power)
+        assert got.grid_power == pytest.approx(r.grid_power)
 
     def test_latest_returns_most_recent(self, store: SQLiteStorage) -> None:
         """``latest`` must return the row with the highest timestamp."""

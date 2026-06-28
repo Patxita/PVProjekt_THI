@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS readings (
     timestamp         TEXT    NOT NULL,
     pv_power          REAL    NOT NULL,
     consumption_power REAL    NOT NULL,
-    grid_import_power REAL    NOT NULL
+    grid_power        REAL    NOT NULL
 );
 """
 
@@ -56,13 +56,13 @@ class SQLiteStorage:
         """
         self.conn.execute(
             "INSERT INTO readings "
-            "(timestamp, pv_power, consumption_power, grid_import_power) "
+            "(timestamp, pv_power, consumption_power, grid_power) "
             "VALUES (?, ?, ?, ?)",
             (
                 reading.timestamp.isoformat(),
                 reading.pv_power,
                 reading.consumption_power,
-                reading.grid_import_power,
+                reading.grid_power,
             ),
         )
         self.conn.commit()
@@ -78,7 +78,7 @@ class SQLiteStorage:
             list[PVReading]: Matching readings, oldest first; empty if none.
         """
         cursor = self.conn.execute(
-            "SELECT timestamp, pv_power, consumption_power, grid_import_power "
+            "SELECT timestamp, pv_power, consumption_power, grid_power "
             "FROM readings WHERE timestamp >= ? AND timestamp < ? "
             "ORDER BY timestamp",
             (start.isoformat(), end.isoformat()),
@@ -93,7 +93,7 @@ class SQLiteStorage:
             exist yet.
         """
         row = self.conn.execute(
-            "SELECT timestamp, pv_power, consumption_power, grid_import_power "
+            "SELECT timestamp, pv_power, consumption_power, grid_power "
             "FROM readings ORDER BY timestamp DESC LIMIT 1"
         ).fetchone()
         if row is None:
@@ -109,7 +109,7 @@ class SQLiteStorage:
 
         Args:
             row: A ``(timestamp, pv_power, consumption_power,
-                grid_import_power)`` tuple as returned by a SELECT.
+                grid_power)`` tuple as returned by a SELECT.
 
         Returns:
             PVReading: The reconstructed reading.
@@ -118,5 +118,5 @@ class SQLiteStorage:
             timestamp=datetime.fromisoformat(row[0]),
             pv_power=row[1],
             consumption_power=row[2],
-            grid_import_power=row[3],
+            grid_power=row[3],
         )
