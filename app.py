@@ -255,9 +255,7 @@ def render_dashboard() -> None:
 
         day_autarky = day_summary["autarky"] * 100
 
-        total_import_wh = (
-            day_df["grid_power"] * COLLECTION_INTERVAL_S / 3600.0
-        ).sum()
+        total_import_wh = (day_df["grid_power"] * COLLECTION_INTERVAL_S / 3600.0).sum()
         c1.metric("PV generated (today)", f"{total_gen_wh:,.0f} Wh")
         c2.metric("Consumed (today)", f"{total_cons_wh:,.0f} Wh")
         c3.metric("Grid import (today)", f"{total_import_wh:,.0f} Wh")
