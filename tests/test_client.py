@@ -63,7 +63,7 @@ class TestApiClient:
 
         reading = client._parse(payload)
 
-        assert reading.grid_import_power == 600
+        assert reading.grid_power == 600
 
     def test_parse_converts_timestamp(self) -> None:
         """The API timestamp is converted into a datetime object."""

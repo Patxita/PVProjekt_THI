@@ -23,7 +23,7 @@ def make_reading(pv: float, consumption: float, grid_import: float = 0.0) -> PVR
         timestamp=datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc),
         pv_power=pv,
         consumption_power=consumption,
-        grid_import_power=grid_import,
+        grid_power=grid_import,
     )
 
 

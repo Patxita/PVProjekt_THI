@@ -40,4 +40,4 @@ class PVReading:
     timestamp: datetime
     pv_power: float
     consumption_power: float
-    grid_import_power: float
+    grid_power: float  # positive = grid import, negative = grid export (feed-in)

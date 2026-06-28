@@ -87,10 +87,10 @@ class MockPVSource:
         now = datetime.now(timezone.utc)
         pv_power = self.peak_power_w * self._solar_factor(now) * self._jitter()
         consumption_power = self.base_load_w * self._jitter()
-        grid_import_power = max(0.0, consumption_power - pv_power)
+        grid_power = max(0.0, consumption_power - pv_power)
         return PVReading(
             timestamp=now,
             pv_power=round(pv_power, 1),
             consumption_power=round(consumption_power, 1),
-            grid_import_power=round(grid_import_power, 1),
+            grid_power=round(grid_power, 1),
         )
