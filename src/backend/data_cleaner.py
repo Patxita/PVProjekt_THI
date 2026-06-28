@@ -78,8 +78,7 @@ class DataCleaner:
         )
 
     def _clamp_negatives(self, reading: PVReading) -> PVReading:
-        """Return a copy of the reading with negative pv and consumption
-        powers clamped to 0. Grid power may be negative (feed-in to grid).
+        """Clamp negative pv and consumption to 0; grid_power may stay negative.
 
         Args:
             reading: The reading to repair.
@@ -87,7 +86,6 @@ class DataCleaner:
         Returns:
             PVReading: A new reading with pv_power and consumption_power >= 0.
         """
-
         return PVReading(
             timestamp=reading.timestamp,
             pv_power=max(0.0, reading.pv_power),
