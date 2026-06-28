@@ -225,6 +225,7 @@ def render_dashboard() -> None:
         f"{calc.autarky_ratio(latest) * 100:.1f} %",
     )
     from datetime import timedelta, timezone
+
     CEST = timezone(timedelta(hours=2))
     last_reading_cest = latest.timestamp.astimezone(CEST).strftime("%Y-%m-%d %H:%M:%S")
     st.caption(f"Last reading: {last_reading_cest} CEST")
