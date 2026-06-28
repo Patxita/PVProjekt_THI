@@ -202,8 +202,7 @@ def render_dashboard() -> None:
     # Header
     # ------------------------------------------------------------------
     st.title("☀️ PV Monitoring Dashboard – THI Ingolstadt")
-    st.caption("Data refreshes every 5 seconds  |  All times UTC")
-
+    st.caption("Data refreshes every 5 seconds  |  All times CEST (UTC+2)")
     # ------------------------------------------------------------------
     # Latest reading – metric cards
     # ------------------------------------------------------------------
@@ -225,8 +224,9 @@ def render_dashboard() -> None:
         "Autarky (now)",
         f"{calc.autarky_ratio(latest) * 100:.1f} %",
     )
-    st.caption(f"Last reading: {latest.timestamp:%Y-%m-%d %H:%M:%S} UTC")
-
+    from datetime import timezone, timedelta
+    CEST = timezone(timedelta(hours=2))
+    st.caption(f"Last reading: {latest.timestamp.astimezone(CEST):%Y-%m-%d %H:%M:%S} CEST")
     st.divider()
 
     # ------------------------------------------------------------------
