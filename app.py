@@ -414,9 +414,7 @@ def render_dashboard() -> None:
                         "Readings": 0,
                     }
                 )
-        st.dataframe(
-            pd.DataFrame(summary_rows), use_container_width=True, hide_index=True
-        )
+        st.dataframe(pd.DataFrame(summary_rows), width="stretch", hide_index=True)
 
         st.divider()
 
