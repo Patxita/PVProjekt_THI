@@ -113,7 +113,7 @@ def _readings_to_df(
 
     Returns:
         pd.DataFrame: Columns: timestamp, pv_power, consumption_power,
-        grid_import_power, pv_energy_wh.
+        grid_power, pv_energy_wh.
     """
     if not readings:
         return pd.DataFrame(
@@ -121,7 +121,7 @@ def _readings_to_df(
                 "timestamp",
                 "pv_power",
                 "consumption_power",
-                "grid_import_power",
+                "grid_power",
                 "pv_energy_wh",
             ]
         )
@@ -130,7 +130,7 @@ def _readings_to_df(
             "timestamp": [r.timestamp for r in readings],
             "pv_power": [r.pv_power for r in readings],
             "consumption_power": [r.consumption_power for r in readings],
-            "grid_import_power": [r.grid_import_power for r in readings],
+            "grid_power": [r.grid_power for r in readings],
         }
     )
     # Cumulative energy in Wh (power × interval / 3600)
@@ -219,7 +219,8 @@ def render_dashboard() -> None:
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("PV generation", f"{latest.pv_power:,.0f} W")
     col2.metric("Consumption", f"{latest.consumption_power:,.0f} W")
-    col3.metric("Grid import", f"{latest.grid_import_power:,.0f} W")
+    grid_label = "Grid export ↑" if latest.grid_power < 0 else "Grid import ↓"
+    col3.metric(grid_label, f"{abs(latest.grid_power):,.0f} W")
     col4.metric(
         "Autarky (now)",
         f"{calc.autarky_ratio(latest) * 100:.1f} %",
@@ -255,7 +256,7 @@ def render_dashboard() -> None:
         day_autarky = day_summary["autarky"] * 100
 
         total_import_wh = (
-            day_df["grid_import_power"] * COLLECTION_INTERVAL_S / 3600.0
+            day_df["grid_power"] * COLLECTION_INTERVAL_S / 3600.0
         ).sum()
         c1.metric("PV generated (today)", f"{total_gen_wh:,.0f} Wh")
         c2.metric("Consumed (today)", f"{total_cons_wh:,.0f} Wh")

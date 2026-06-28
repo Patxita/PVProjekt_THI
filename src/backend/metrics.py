@@ -30,7 +30,7 @@ class MetricsCalculator:
             reading: The reading to evaluate.
 
         Returns:
-            float: ``max(0, pv_power - consumption_power)`` in W.
+            float: Positive value when PV exceeds consumption, 0 otherwise.
         """
         return max(0.0, reading.pv_power - reading.consumption_power)
 
