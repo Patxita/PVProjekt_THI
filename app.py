@@ -328,7 +328,7 @@ def render_dashboard() -> None:
             margin=dict(t=20, b=40),
             hovermode="x unified",
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
     else:
         st.info("No data for today yet.")
 
@@ -342,15 +342,15 @@ def render_dashboard() -> None:
 
     pc1.plotly_chart(
         _autarky_pie(day_readings, calc, "Today"),
-        use_container_width=True,
+        width="stretch",
     )
     pc2.plotly_chart(
         _autarky_pie(month_readings, calc, "This month"),
-        use_container_width=True,
+        width="stretch",
     )
     pc3.plotly_chart(
         _autarky_pie(year_readings, calc, "This year"),
-        use_container_width=True,
+        width="stretch",
     )
 
     store.close()
