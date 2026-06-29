@@ -1,8 +1,8 @@
 # ☀️ PV Dashboard – THI Ingolstadt
 
-A real-time photovoltaic monitoring dashboard built for the THI (Technische Hochschule Ingolstadt) Data Science course.
+This is a real-time photovoltaic monitoring dashboard built for the Software Development Lab class.
 
-The system collects live PV data from the university's API every 5 seconds, stores it in a local SQLite database, and displays it in an auto-refreshing Streamlit dashboard.
+The system collects live PV data from the THI's API every 5 seconds, stores it in a local SQLite database, and displays it in an auto-refreshing Streamlit dashboard.
 
 ---
 
