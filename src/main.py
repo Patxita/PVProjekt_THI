@@ -30,7 +30,6 @@ from pathlib import Path
 from src.backend.client import ApiClient
 from src.backend.data_cleaner import DataCleaner
 from src.backend.data_storage import SQLiteStorage
-from src.backend.mock_source import MockPVSource
 
 INTERVAL_S: int = 5
 """Seconds between consecutive readings."""
@@ -53,8 +52,11 @@ def _build_source():
     if os.environ.get("PV_API_URL"):
         logger.info("PV_API_URL found — using live ApiClient")
         return ApiClient()
-    logger.warning("PV_API_URL not set — using MockPVSource (no live data)")
-    return MockPVSource()
+    logger.warning(
+        "PV_API_URL not set — using MockPVSource. "
+        "Data stored is SYNTHETIC and not from the real API. "
+        "Set PV_API_URL and PV_API_KEY for live data."
+    )
 
 
 def main() -> None:
