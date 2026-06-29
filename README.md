@@ -1,8 +1,8 @@
 # ☀️ PV Dashboard – THI Ingolstadt
 
-A real-time photovoltaic monitoring dashboard built for the THI (Technische Hochschule Ingolstadt) Data Science course.
+This is a real-time photovoltaic monitoring dashboard built for the Software Development Lab class.
 
-The system collects live PV data from the university's API every 5 seconds, stores it in a local SQLite database, and displays it in an auto-refreshing Streamlit dashboard.
+The system collects live PV data from the THI's API every 5 seconds, stores it in a local SQLite database, and displays it in an auto-refreshing Streamlit dashboard.
 
 ---
 
@@ -81,6 +81,13 @@ python -m src.main
 # 6. Start the dashboard (in a second terminal)
 streamlit run app.py
 ```
+
+> **No VPN access?**
+> 
+> For local development without a connection to the THI
+> network, you can temporarily replace `ApiClient` with `MockPVSource` in
+> `src/main.py`. Never commit this change — `MockPVSource` generates
+> synthetic data only.
 
 The dashboard opens automatically at **http://localhost:8501**.
 
