@@ -82,6 +82,11 @@ python -m src.main
 streamlit run app.py
 ```
 
+> **No VPN access?** For local development without a connection to the THI
+> network, you can temporarily replace `ApiClient` with `MockPVSource` in
+> `src/main.py`. Never commit this change — `MockPVSource` generates
+> synthetic data only.
+
 The dashboard opens automatically at **http://localhost:8501**.
 
 ---
