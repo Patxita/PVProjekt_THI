@@ -91,4 +91,5 @@ class DataCleaner:
             pv_power=max(0.0, reading.pv_power),
             consumption_power=max(0.0, reading.consumption_power),
             grid_power=reading.grid_power,
+            age_seconds=reading.age_seconds,
         )

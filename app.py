@@ -186,34 +186,53 @@ def _autarky_pie(
     return fig
 
 
-def _timeseries_chart(df: pd.DataFrame) -> go.Figure:
+def _timeseries_chart(df: pd.DataFrame, gap_threshold_s: float = 30.0) -> go.Figure:
     """Build a dual-axis time-series chart for generation and consumption.
+
+    Inserts visible breaks in both lines wherever the time between two
+    consecutive readings exceeds ``gap_threshold_s``, so missing data is
+    shown as a gap rather than a misleading straight line between distant
+    points.
 
     Args:
         df: DataFrame with columns ``timestamp``, ``pv_energy_wh``,
             ``consumption_power`` as produced by :func:`_readings_to_df`.
+        gap_threshold_s: Maximum allowed seconds between consecutive
+            readings before a gap is inserted. Defaults to 30s (6x the
+            normal 5s collection interval).
 
     Returns:
-        go.Figure: A Plotly dual-axis line chart.
+        go.Figure: A Plotly dual-axis line chart with gaps shown as breaks.
     """
+    df = df.copy()
+    time_diffs = df["timestamp"].diff().dt.total_seconds()
+    gap_mask = time_diffs > gap_threshold_s
+
+    pv_y = df["pv_energy_wh"].astype(object)
+    cons_y = df["consumption_power"].astype(object)
+    pv_y[gap_mask] = None
+    cons_y[gap_mask] = None
+
     fig = make_subplots(specs=[[{"secondary_y": True}]])
     fig.add_trace(
         go.Scatter(
             x=df["timestamp"],
-            y=df["pv_energy_wh"],
+            y=pv_y,
             name="PV generation (Wh)",
             line=dict(color="#f5a623", width=2),
             fill="tozeroy",
             fillcolor="rgba(245,166,35,0.15)",
+            connectgaps=False,
         ),
         secondary_y=False,
     )
     fig.add_trace(
         go.Scatter(
             x=df["timestamp"],
-            y=df["consumption_power"],
+            y=cons_y,
             name="Consumption (W)",
             line=dict(color="#4a90d9", width=2),
+            connectgaps=False,
         ),
         secondary_y=True,
     )
@@ -270,6 +289,15 @@ def render_dashboard() -> None:
 
     last_reading_cest = latest.timestamp.astimezone(CEST).strftime("%Y-%m-%d %H:%M:%S")
     st.caption(f"Last reading: {last_reading_cest} CEST")
+
+    STALE_THRESHOLD_S = 60
+    if latest.age_seconds > STALE_THRESHOLD_S:
+        age_min = latest.age_seconds / 60
+        st.warning(
+            f"⚠️ Data is {age_min:.1f} minutes old according to the API "
+            f"(age_seconds={latest.age_seconds:.0f}). The university's PV "
+            f"monitoring system may not be reporting fresh values right now."
+        )
 
     st.divider()
 

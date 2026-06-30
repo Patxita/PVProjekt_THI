@@ -20,7 +20,8 @@ CREATE TABLE IF NOT EXISTS readings (
     timestamp         TEXT    NOT NULL,
     pv_power          REAL    NOT NULL,
     consumption_power REAL    NOT NULL,
-    grid_power        REAL    NOT NULL
+    grid_power        REAL    NOT NULL,
+    age_seconds       REAL    NOT NULL DEFAULT 0.0
 );
 """
 
@@ -56,13 +57,14 @@ class SQLiteStorage:
         """
         self.conn.execute(
             "INSERT INTO readings "
-            "(timestamp, pv_power, consumption_power, grid_power) "
-            "VALUES (?, ?, ?, ?)",
+            "(timestamp, pv_power, consumption_power, grid_power, age_seconds) "
+            "VALUES (?, ?, ?, ?, ?)",
             (
                 reading.timestamp.isoformat(),
                 reading.pv_power,
                 reading.consumption_power,
                 reading.grid_power,
+                reading.age_seconds,
             ),
         )
         self.conn.commit()
@@ -78,7 +80,7 @@ class SQLiteStorage:
             list[PVReading]: Matching readings, oldest first; empty if none.
         """
         cursor = self.conn.execute(
-            "SELECT timestamp, pv_power, consumption_power, grid_power "
+            "SELECT timestamp, pv_power, consumption_power, grid_power, age_seconds "
             "FROM readings WHERE timestamp >= ? AND timestamp < ? "
             "ORDER BY timestamp",
             (start.isoformat(), end.isoformat()),
@@ -93,7 +95,7 @@ class SQLiteStorage:
             exist yet.
         """
         row = self.conn.execute(
-            "SELECT timestamp, pv_power, consumption_power, grid_power "
+            "SELECT timestamp, pv_power, consumption_power, grid_power, age_seconds "
             "FROM readings ORDER BY timestamp DESC LIMIT 1"
         ).fetchone()
         if row is None:
@@ -119,4 +121,5 @@ class SQLiteStorage:
             pv_power=row[1],
             consumption_power=row[2],
             grid_power=row[3],
+            age_seconds=row[4] if len(row) > 4 else 0.0,
         )

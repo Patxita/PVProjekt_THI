@@ -84,6 +84,7 @@ class ApiClient:
             KeyError: If an expected field is missing from ``payload``.
         """
         timestamp = datetime.fromisoformat(payload["collected_at"])
+        age_seconds = float(payload.get("age_seconds", 0.0))
 
         pv_power = 0.0
         consumption_power = 0.0
@@ -102,4 +103,5 @@ class ApiClient:
             pv_power=pv_power,
             consumption_power=consumption_power,
             grid_power=grid_power,
+            age_seconds=age_seconds,
         )
