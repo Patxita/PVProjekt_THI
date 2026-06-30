@@ -40,7 +40,6 @@ class PVReading:
             reported by the API. 0.0 for mock data (always "fresh").
     """
 
-
     timestamp: datetime
     pv_power: float
     consumption_power: float
