@@ -35,9 +35,13 @@ class PVReading:
         grid_import_power (float): Power currently drawn from the external
             grid, in W. Always >= 0; equals 0 when the panels cover the
             full load.
+        age_seconds (float): Seconds between when the underlying sensor
+            value was measured and when this reading was fetched, as
+            reported by the API. 0.0 for mock data (always "fresh").
     """
 
     timestamp: datetime
     pv_power: float
     consumption_power: float
     grid_power: float  # positive = grid import, negative = grid export (feed-in)
+    age_seconds: float = 0.0  # how old the API's measurement was when fetched
