@@ -271,6 +271,15 @@ def render_dashboard() -> None:
     last_reading_cest = latest.timestamp.astimezone(CEST).strftime("%Y-%m-%d %H:%M:%S")
     st.caption(f"Last reading: {last_reading_cest} CEST")
 
+    STALE_THRESHOLD_S = 60
+    if latest.age_seconds > STALE_THRESHOLD_S:
+        age_min = latest.age_seconds / 60
+        st.warning(
+            f"⚠️ Data is {age_min:.1f} minutes old according to the API "
+            f"(age_seconds={latest.age_seconds:.0f}). The university's PV "
+            f"monitoring system may not be reporting fresh values right now."
+        )
+
     st.divider()
 
     # ------------------------------------------------------------------
