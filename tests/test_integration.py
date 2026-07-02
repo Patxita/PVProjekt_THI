@@ -88,7 +88,7 @@ class TestPipelineIntegration:
         assert summary["autarky"] == pytest.approx(1.0)  # PV fully covers consumption
 
     def test_pipeline_rejects_implausible_reading(self, store: SQLiteStorage) -> None:
-        """A reading with a implausible value is rejected before reaching the database.
+        """A reading with an implausible value is rejected before reaching the database.
 
         Args:
             store: In-memory SQLiteStorage fixture.
